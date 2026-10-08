@@ -34,4 +34,6 @@ jobs:
 
       # 실제 파일 실행 (main.py 부분을 실행하려는 파일명으로 변경)
       - name: Run script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python gemini_gems_pipeline.py
