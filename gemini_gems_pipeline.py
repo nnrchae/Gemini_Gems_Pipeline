@@ -32,8 +32,15 @@ def get_gspread_client():
     try:
         # GitHub Actions 환경에서 Secrets 값을 이용해 JSON 파일 복원
         if SERVICE_ACCOUNT_JSON and not os.path.exists(CREDS_FILE):
-            with open(CREDS_FILE, "w", encoding="utf-8") as f:
-                f.write(SERVICE_ACCOUNT_JSON)
+            try:
+                # JSON 정식 포맷 검증 후 파일 저장
+                json_data = json.loads(SERVICE_ACCOUNT_JSON)
+                with open(CREDS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(json_data, f, ensure_ascii=False, indent=2)
+            except json.JSONDecodeError:
+                # 일반 텍스트로 바로 저장
+                with open(CREDS_FILE, "w", encoding="utf-8") as f:
+                    f.write(SERVICE_ACCOUNT_JSON)
 
         if not os.path.exists(CREDS_FILE):
             print("[경고] service_account.json 파일이 존재하지 않습니다. GitHub Secrets의 SERVICE_ACCOUNT_JSON 설정을 확인하세요.")
@@ -167,7 +174,7 @@ def run_gems_pipeline():
             else:
                 clean_err = f"[실행 오류]: {err_msg[:120]}..."
                 
-            print(f"   └ {clean_err}")
+            print(f"    └ {clean_err}")
             report_body += f"■ {gem_name}\n"
             report_body += f"---------------------------------------------------------\n"
             report_body += f"{clean_err}\n\n\n"
@@ -181,6 +188,11 @@ def run_gems_pipeline():
 
 def send_email(content, today_str):
     print("이메일 발송 준비 중...")
+    
+    if not SENDER_EMAIL or not SENDER_APP_PASSWORD or not RECEIVER_EMAIL:
+        print("❌ 이메일 발송 실패: SENDER_EMAIL, SENDER_APP_PASSWORD, RECEIVER_EMAIL 환경변수(Secrets)를 모두 확인해 주세요.")
+        return
+
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
     msg['To'] = RECEIVER_EMAIL
@@ -189,9 +201,8 @@ def send_email(content, today_str):
     msg.attach(MIMEText(content, 'plain', 'utf-8'))
 
     try:
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.ehlo()
-            server.starttls()
+        # SSL 465 포트로 직결하여 접속 안정성 확보
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
             server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, msg.as_string())
         print("✅ 성공적으로 이메일을 발송했습니다!")
