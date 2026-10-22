@@ -25,9 +25,12 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 # ---------------------------------------------------------------------------
 
 def run_semiconductor_news_analysis_pipeline():
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    today_korean_str = datetime.now().strftime("2026년 10월 13일")
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    yesterday_str = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # 💡 오늘 날짜가 동적으로 반영되도록 수정 (년, 월, 일 포맷팅 적용)
+    today_korean_str = now.strftime("%Y년 %m월 %d일")
     
     print(f"Gemini 반도체 뉴스 분석 시작 (기준: 어제({yesterday_str}) 이후 데이터 분석)...")
 
