@@ -21,14 +21,16 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 # ---------------------------------------------------------------------------
-# 2. 메인 파이프라인 (수급 붕괴 & 마진콜 징후 분석)
+# 2. 메인 파이프라인 (수급 붕괴 & 마진콜 징후 분석 - 당일 날짜 동적 반영)
 # ---------------------------------------------------------------------------
 
 def run_liquidity_margin_analysis_pipeline():
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    today_korean_str = datetime.now().strftime("2026년 10월 13일")
+    # 실행하는 당일 날짜로 동적 생성
+    today_dt = datetime.now()
+    today_str = today_dt.strftime("%Y-%m-%d")
+    today_korean_str = f"{today_dt.year}년 {today_dt.month}월 {today_dt.day}일"
     
-    print("Gemini 수급 붕괴 및 헤지펀드 마진콜 징후 분석 생성 중...")
+    print(f"[{today_korean_str}] Gemini 수급 붕괴 및 헤지펀드 마진콜 징후 분석 생성 중...")
 
     # 안정적인 작성을 위한 프롬프트 구조 (마크다운 표 제외)
     prompt = f"""
