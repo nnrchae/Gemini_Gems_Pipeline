@@ -143,6 +143,11 @@ def run_macro_analysis_pipeline():
             doc = gc.open("매일 아침 자동 갱신용")
             # 1. 71행 이후 추가 지표 자동 수집 및 업데이트 선행 실행
             auto_update_macro_indicators(client, doc)
+            
+            # 💡 무료 플랜 과부하(503 에러) 방지를 위해 5초 대기
+            print("API 서버 과부하 방지를 위해 5초 대기 중...")
+            time.sleep(5)
+            
         except Exception as e:
             print(f"구글 시트 오픈 또는 자동 업데이트 실패: {e}")
     
@@ -210,20 +215,32 @@ def run_macro_analysis_pipeline():
 """
 
     print("Gemini API 분석 요청 중 (웹 검색 툴 활성화)...")
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.1,
-                tools=[types.Tool(google_search=types.GoogleSearch())]
+    
+    # 💡 503 에러 발생 시 최대 3번까지 재시도하는 안전장치 적용
+    analysis_result = "[실행 오류 발생]: 응답을 받지 못했습니다."
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.1,
+                    tools=[types.Tool(google_search=types.GoogleSearch())]
+                )
             )
-        )
-        analysis_result = response.text.strip() if response.text else "응답 내용 없음"
-    except Exception as e:
-        analysis_result = f"[실행 오류 발생]: {e}"
-        print(analysis_result)
+            if response.text:
+                analysis_result = response.text.strip()
+                break
+        except Exception as e:
+            print(f"⚠️ 시도 {attempt + 1}회 실패: {e}")
+            if attempt < max_retries - 1:
+                print("10초 후 재시도합니다...")
+                time.sleep(10)
+            else:
+                analysis_result = f"[실행 오류 발생]: {e}"
 
     # -----------------------------------------------------------------------
     # 리포트 본문 구성 및 이메일 발송
@@ -264,5 +281,5 @@ def send_email(content, today_str):
 
 
 if __name__ == "__main__":
-    print("🚀 매크로분석 스크립트 실행 시작...")
+    print("🚀 매크로분석 스크립트 실행 시작오...")
     run_macro_analysis_pipeline()
