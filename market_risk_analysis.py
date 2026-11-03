@@ -21,16 +21,18 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 # ---------------------------------------------------------------------------
-# 2. 메인 파이프라인 (방어 로직 강화 버전)
+# 2. 메인 파이프라인 (실행 당일 날짜 동적 생성 반영)
 # ---------------------------------------------------------------------------
 
 def run_market_risk_analysis_pipeline():
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    today_korean_str = datetime.now().strftime("2026년 10월 13일")
+    # 실행하는 당일 날짜로 동적 생성
+    today_dt = datetime.now()
+    today_str = today_dt.strftime("%Y-%m-%d")
+    today_korean_str = f"{today_dt.year}년 {today_dt.month}월 {today_dt.day}일"
     
-    print("Gemini 시장 하락세 및 리스크 정밀 진단 생성 중...")
+    print(f"[{today_korean_str}] Gemini 시장 하락세 및 리스크 정밀 진단 생성 중...")
 
-    # 프롬프트 내용을 가장 단순하고 안전하게 구성
+    # 프롬프트 구성
     prompt = f"""
 당신은 신영증권 김효진 박사의 버블 고점 시그널 분석 방법론을 활용하는 금융 시장 위험 평가 전문가입니다.
 기준일자인 {today_korean_str}을 바탕으로 아래 2가지 주제에 대해 한국어로 명확하고 전문적인 애널리스트 톤의 리포트를 작성해 주세요. 
@@ -81,7 +83,7 @@ def run_market_risk_analysis_pipeline():
             print("5초 후 재시도합니다...")
             time.sleep(5)
 
-    # 만약 3번 모두 실패할 경우를 대비한 안전 폴백(Fallback) 텍스트
+    # 안전 폴백(Fallback) 텍스트
     if not analysis_result:
         analysis_result = f"""
 [시장 하락세 및 리스크 진단 기본 브리핑]
@@ -132,7 +134,7 @@ def send_email(content, today_str):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
             server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, msg.as_string())
-        print("✅ 성공적으로 이메일을 발송했습니다!")
+            print("✅ 성공적으로 이메일을 발송했습니다!")
     except Exception as e:
         print(f"❌ 이메일 발송 실패: {e}")
 
